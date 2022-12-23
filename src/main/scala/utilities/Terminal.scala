@@ -61,11 +61,12 @@ trait Terminal {
   }
 
   def cloneGitRepo(httpRepoLink: List[String],
+                   OrganizationName: String,
                    githubUser: String,
                    githubToken: String): List[Unit] = {
 
     httpRepoLink.map { link =>
-      runCommand(s"git clone https://$githubUser:$githubToken@github.com/fullfacing/$link.git")
+      runCommand(s"git clone https://$githubUser:$githubToken@github.com/$OrganizationName/$link.git")
     }
   }
 }

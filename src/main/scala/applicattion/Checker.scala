@@ -7,12 +7,12 @@ object Checker extends App
   with Terminal
   with Commands {
 
-  def runChecker(services: List[String]): List[ServiceDiff]= {
+  def runChecker(services: List[String], OrganizationName: String): List[ServiceDiff] = {
     val githubToken = getGithubToken()
     val githubUser = getGithubUser()
 
     println("Cloning Github Repos")
-    cloneGitRepo(services, githubUser, githubToken)
+    cloneGitRepo(services, OrganizationName, githubUser, githubToken)
 
     println("Fetching Latest github updates")
     gitFetch(services)

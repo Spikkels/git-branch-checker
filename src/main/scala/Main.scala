@@ -1,7 +1,9 @@
 import applicattion.Checker
 
 object Main
-  extends App {
+  extends App
+
+  val organizationName = "fullfacing"
 
   val services: List[String] = List(
     "fng-api-aggregation",
@@ -14,7 +16,7 @@ object Main
     "fng-api-client"
   )
 
-  Checker.diffPrinter(Checker.runChecker(services))
+  Checker.diffPrinter(Checker.runChecker(services, organizationName) )
 
 }
 
