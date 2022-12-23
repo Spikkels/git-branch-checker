@@ -1,7 +1,7 @@
 import applicattion.Checker
 
 object Main
-  extends App
+  extends App {
 
   val organizationName = "fullfacing"
 
@@ -16,7 +16,7 @@ object Main
     "fng-api-client"
   )
 
-  Checker.diffPrinter(Checker.runChecker(services, organizationName) )
+  Checker.diffPrinter(Checker.runChecker(services, organizationName))
 
 }
 
