@@ -6,8 +6,6 @@ import zio.Console._
 
 object MyApp extends ZIOAppDefault with Terminal {
   def run = myAppLogic
-
-
     val organizationName = "fullfacing"
 
     val services: List[String] = List(
@@ -25,10 +23,7 @@ object MyApp extends ZIOAppDefault with Terminal {
     for {
       diffs    <- Checker.runChecker(services, organizationName)
       _         = Checker.diffPrinter(diffs)
-
     } yield ()
-
-
 }
 
 
