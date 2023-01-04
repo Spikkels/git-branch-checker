@@ -1,13 +1,16 @@
 package utilities
 
+import utilities.Terminal.CommandOutput
+import zio.ZIO
+
 trait Commands extends Terminal {
 
-  def getGithubToken(): String = runCommand("git config --get github.token").stdout.toString()
+  def getGithubToken(): ZIO[Any, Any, CommandOutput]  = runCommand("git config --get github.token")
 
-  def getGithubUser(): String = runCommand("git config --get github.user").stdout.toString()
+  def getGithubUser(): ZIO[Any, Any, CommandOutput]  = runCommand("git config --get github.user")
 
-  def getEmail() = runCommand("git config --get user.email").stdout.toString()
+  def getEmail(): ZIO[Any, Any, CommandOutput]  = runCommand("git config --get user.email")
 
-  def getSigningKey(): String = runCommand("git config --get user.signingkey").stdout.toString()
+  def getSigningKey(): ZIO[Any, Any, CommandOutput]  = runCommand("git config --get user.signingkey")
 
 }

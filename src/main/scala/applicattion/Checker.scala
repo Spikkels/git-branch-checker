@@ -2,27 +2,26 @@ package applicattion
 
 import utilities.Terminal.ServiceDiff
 import utilities.{Commands, Terminal}
+import zio.ZIO
 
 object Checker extends App
   with Terminal
   with Commands {
 
-  def runChecker(services: List[String], OrganizationName: String): List[ServiceDiff] = {
-    val githubToken = getGithubToken()
-    val githubUser = getGithubUser()
+  def runChecker(services: List[String], OrganizationName: String): ZIO[Any, Any, List[ServiceDiff]] = {
 
-    println("Cloning Github Repos")
-    cloneGitRepo(services, OrganizationName, githubUser, githubToken)
-
-    println("Fetching Latest github updates")
-    gitFetch(services)
-
-    println("Diffing Services")
-    val devStaDiff = gitDiff(services, "origin/v3-develop", "origin/v3-staging   ")
-    val staUatDiff = gitDiff(services, "origin/v3-staging", "origin/v3-uat       ")
-    val uatProDiff = gitDiff(services, "origin/v3-uat    ", "origin/v3-production")
-
-    devStaDiff ++ staUatDiff ++ uatProDiff
+    for {
+      githubToken  <- getGithubToken()
+      githubUser   <- getGithubUser()
+      _             = println("Cloning Github Repos")
+      _            <- cloneGitRepo(services, OrganizationName, githubUser.stdout, githubToken.stdout)
+      _             = println("Fetching Latest github updates")
+      _            <- gitFetch(services)
+      _             = println("Diffing Services")
+      devStaDiff   <- gitDiff(services, "origin/v3-develop", "origin/v3-staging   ")
+      staUatDiff   <- gitDiff(services, "origin/v3-staging", "origin/v3-uat       ")
+      uatProDiff   <- gitDiff(services, "origin/v3-uat    ", "origin/v3-production")
+    } yield devStaDiff ++ staUatDiff ++ uatProDiff
   }
 
   def diffPrinter(serviceDiffs: List[ServiceDiff]): Iterable[List[Unit]] = {

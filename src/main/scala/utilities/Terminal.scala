@@ -1,71 +1,82 @@
 package utilities
 
-import utilities.Terminal.{CommandOutput, ServiceDiff}
-
+import zio.ZIO
 import java.io.File
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
+import utilities.Terminal.{CommandOutput, ServiceDiff}
+
 
 trait Terminal {
 
-  def runCommand(command: String): CommandOutput = {
+  /**
+   * Terminal command to be run in only in local directory
+   *
+   * @param command terminal command
+   */
+  def runCommand(command: String): ZIO[Any, Any, CommandOutput] = {
     val stdout = new StringBuilder
     val stderr = new StringBuilder
 
-    val status = command ! ProcessLogger(stdout append _, stderr append _)
-
-    CommandOutput(status, stdout, stderr)
-  }
-
-  def runCommandInFolder(command: String, folder: String): CommandOutput = {
-    val stdout = new StringBuilder
-    val stderr = new StringBuilder
-
-    val status = Process(s"$command", new File(folder)).!(ProcessLogger(stdout append _, stderr append _))
-
-    CommandOutput(status, stdout, stderr)
-  }
-
-  def gitFetch(serviceNames: List[String]): List[CommandOutput] = {
-    lazy val stdout = new StringBuilder
-    lazy val stderr = new StringBuilder
-
-    serviceNames.map { name =>
-
-      Try {
-        runCommandInFolder("git fetch", name)
-      } match {
-        case Success(value) =>
-          value
-        case Failure(err) =>
-          println(s"A error occurred while fetching service $name")
-          CommandOutput(1, stdout, stderr.append(err))
-      }
+    Try {
+      command ! ProcessLogger(stdout append _, stderr append _)
+    } match {
+      case Success(status)    => ZIO.succeed(CommandOutput(status, stdout.toString(), stderr.toString()))
+      case Failure(exception) => ZIO.succeed(CommandOutput(1, stdout.toString(), stderr.append(exception.getMessage).toString()))
     }
   }
 
+  /**
+   * Terminal command to be run in only in local directory
+   *
+   * @param command terminal command
+   * @param folder folder name
+   */
+  def runCommandInFolder(command: String, folder: String): ZIO[Any, Any, CommandOutput]  = {
+    val stdout = new StringBuilder
+    val stderr = new StringBuilder
+
+    Try {
+      Process(s"$command", new File(folder)).!(ProcessLogger(stdout append _, stderr append _))
+    } match {
+      case Success(status)    => ZIO.succeed(CommandOutput(status, stdout.toString(), stderr.toString()))
+      case Failure(exception) => ZIO.succeed(CommandOutput(1, stdout.toString(), stderr.append(exception.getMessage).toString()))
+    }
+  }
+
+
+  def gitFetch(serviceNames: List[String]): ZIO[Any, Any, List[CommandOutput]] = {
+    ZIO.foreachPar(serviceNames)(runCommandInFolder("git fetch", _))
+  }
+
+
   def gitDiff(serviceNames: List[String],
               serviceNameOne: String,
-              serviceNameTwo: String): List[ServiceDiff] = {
-    lazy val command = s"git diff $serviceNameOne $serviceNameTwo"
+              serviceNameTwo: String): ZIO[Any, Any, List[ServiceDiff]] = {
 
-    serviceNames.map { serviceName =>
-      val output = runCommandInFolder(command, serviceName)
-
-      if (output.stdout.toString().isBlank) {
+    def mapServiceDiff(serviceName: String, output: CommandOutput): ServiceDiff = {
+      if (output.stdout.isBlank) {
         ServiceDiff(serviceName, s"$serviceNameOne -> $serviceNameTwo", false)
       } else {
         ServiceDiff(serviceName, s"$serviceNameOne -> $serviceNameTwo", true)
       }
+    }
+
+    lazy val command = s"git diff $serviceNameOne $serviceNameTwo"
+
+    ZIO.foreachPar(serviceNames) { serviceName =>
+      for {
+        output       <- runCommandInFolder(command, serviceName)
+        serviceDiffs  = mapServiceDiff(serviceName, output)
+      } yield serviceDiffs
     }
   }
 
   def cloneGitRepo(httpRepoLink: List[String],
                    OrganizationName: String,
                    githubUser: String,
-                   githubToken: String): List[Unit] = {
-
-    httpRepoLink.map { link =>
+                   githubToken: String): ZIO[Any, Any, List[CommandOutput]] = {
+    ZIO.foreachPar(httpRepoLink) { case link =>
       runCommand(s"git clone https://$githubUser:$githubToken@github.com/$OrganizationName/$link.git")
     }
   }
@@ -80,8 +91,8 @@ object Terminal {
    * @param stderr contains unsuccessfully executed error output
    */
   final case class CommandOutput(status: Int,
-                                 stdout: StringBuilder,
-                                 stderr: StringBuilder)
+                                 stdout: String,
+                                 stderr: String)
 
 
   /**
