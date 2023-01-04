@@ -30,6 +30,27 @@ trait Terminal {
    * Terminal command to be run in only in local directory
    *
    * @param command terminal command
+   */
+  def runCommandStopOnFail(command: String): ZIO[Any, String, CommandOutput] = {
+    val stdout = new StringBuilder
+    val stderr = new StringBuilder
+
+    Try {
+      command ! ProcessLogger(stdout append _, stderr append _)
+    } match {
+      case Success(status) if (status == 0) =>
+        ZIO.succeed(CommandOutput(status, stdout.toString(), stderr.toString()))
+      case Success(status) if (status == 1) =>
+        ZIO.fail(s"A error when running command: $command")
+      case Failure(exception) =>
+        ZIO.fail(s"A error when running command: $command with exception: $exception")
+    }
+  }
+
+  /**
+   * Terminal command to be run in only in local directory
+   *
+   * @param command terminal command
    * @param folder folder name
    */
   def runCommandInFolder(command: String, folder: String): ZIO[Any, Any, CommandOutput]  = {
